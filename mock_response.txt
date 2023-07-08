@@ -1,0 +1,14 @@
+In Python, you can add two numbers simply by using the addition operator (+). Here's an example:
+
+```python
+# Adding two numbers in Python
+number1 = 5
+number2 = 3
+
+sum = number1 + number2
+
+print('The sum of the two numbers is:', sum)
+```
+
+In this example, you would replace `number1` and `number2` with the numbers you want to add. The `sum` variable holds the result of the addition, and the `print()` function displays the result.
+

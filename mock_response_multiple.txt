@@ -1,0 +1,43 @@
+In TypeScript, you can add two numbers by following these simple steps:
+
+1. First, make sure that you have TypeScript installed. You can install it via npm using:
+
+```
+npm install -g typescript
+```
+
+2. Create a TypeScript file (e.g., add_numbers.ts) and open it in your favorite text editor.
+
+3. In the add_numbers.ts file, type the following code to add two numbers:
+
+```typescript
+function addNumbers(x: number, y: number): number {
+  return x + y;
+}
+
+const number1: number = 5;
+const number2: number = 7;
+const sum: number = addNumbers(number1, number2);
+
+console.log(`The sum of ${number1} and ${number2} is ${sum}`);
+```
+
+The code above defines a function `addNumbers(x: number, y: number): number`, which takes two input numbers and returns their sum. Then, two numbers `number1` and `number2` are added together, and the result is stored in the `sum` variable. Lastly, the console.log function is used to log the result.
+
+4. Save your changes in the add_numbers.ts file.
+
+5. Open your terminal, navigate to the file's location, and compile the TypeScript file:
+
+```
+tsc add_numbers.ts
+```
+
+This command will create a new JavaScript file called add_numbers.js.
+
+6. To run the compiled JavaScript, use the following command:
+
+```
+node add_numbers.js
+```
+
+The output should display the sum of the two numbers you entered in the code.

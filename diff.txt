@@ -1,0 +1,46 @@
+diff --git a/cgpt.py b/cgpt.py
+index 4badf49..8021f70 100644
+--- a/cgpt.py
++++ b/cgpt.py
+@@ -2,19 +2,29 @@ import argparse
+ import openai
+ import os
+ 
++openai.api_key = os.getenv("OPENAI_API_KEY")
++
+ parser = argparse.ArgumentParser()
+-parser.add_argument('-s', '--string', type=str, help='a string to be passed to the script')
++parser.add_argument('-s', '--string', type=str, help='a message for chatgpt')
++parser.add_argument('-z', '--system', type=str, help='system instructions, eg behave like a cahatbo')
+ parser.add_argument('-f', '--file', type=str, help='a file to be passed to the script')
+-parser.add_argument("-l", "--language", help="Generate snppets in a language", type=str)
++parser.add_argument("-l", "--language", help="generate snppets in a language", type=str)
+ args = parser.parse_args()
+ 
+-# access the string argument
++system_arg = args.system
++system_prompt = system_arg || "You offer coding suggestions"
+ string_arg = args.string
+ language_arg = args.language
+ file_arg = args.file
+ file_contents = open(file_arg, "r").read()
+ 
+-openai.api_key = os.getenv("OPENAI_API_KEY")
++if (file_arg): 
++    prompt = f"Given this program:\n\n {file_contents}\n\n {string_arg}"
++     messages=[
++            {"role": "system", "content": system_prompt,
++            {"role": "user", "content": prompt},
++        ]
++
+ 
+ # 'messages': [{'role':'system', 'content':'You are an assistant that speaks like Shakespeare.'},
+ # {'role':'user', 'content':'tell me a joke'},
+@@ -23,7 +33,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
+ # get advice in a particular language
+ # get advice on the current git diff
+ 
+-prompt = f"Given this program:\n\n {file_contents}\n\n {string_arg}"
+ 
+ print(prompt)
+ response = openai.ChatCompletion.create(
