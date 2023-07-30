@@ -2,12 +2,12 @@
 
 # describe
 function gptd() {
-    python ~/source/gpt/cgpt.py -d "$(git diff)" -s 'Describe the changes in the diff' | bat -p
+    python ~/source/llm-utils/cgpt.py -d "$(git diff)" -s 'Describe the changes in the diff' | bat -p
 }
 
 # review
 function gptr() {
-    python ~/source/gpt/cgpt.py -r "$(git diff)" -s 'Leave some comments about how the code can be improved' | bat -p
+    python ~/source/llm-utils/cgpt.py -r "$(git diff)" -s 'Leave some comments about how the code can be improved' | bat -p
 }
 
 # conversate
@@ -15,15 +15,15 @@ function gptc() {
     # gpt-4 head build
     # gpt-4-0314 - no updates for 3 months, june 14 2023
     # gpt-4-32k-0314 same as prev but 32k token support
-    MODEL="gpt-4" python ~/source/gpt/conversate.py "$@"
+    MODEL="gpt-4" python ~/source/llm-utils/conversate.py "$@"
 }
 
 function gptc4() {
-    python ~/source/gpt/conversate.py "$@"
+    python ~/source/llm-utils/conversate.py "$@"
 }
 
 function assist() {
-    python ~/source/gpt/assistant2.py "$@"
+    python ~/source/llm-utils/assistant2.py "$@"
 }
 
 function llama() {

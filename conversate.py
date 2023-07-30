@@ -178,9 +178,10 @@ class Chatbot:
 
     def stats(self, start, end, response):
         latency = end - start
-        print(f"# USAGE: {response.usage}\n\n")
-        print(f"- Latency: {latency}\n")
-        print(f"- Model: {response.model}\n")
+        print(f"# USAGE: \n")
+        print(f"{response.usage}")
+        print(f"- Latency: {latency}")
+        print(f"- Model: {response.model}")
         prompt_cost = (response.usage["prompt_tokens"] / 1000) * 0.03
         completion_cost = (response.usage["total_tokens"] / 1000) * 0.06
         total_cost = prompt_cost + completion_cost
@@ -282,8 +283,6 @@ class Chatbot:
                 prompt = self.files_prompt()
                 self.messages.append({"role": "user", "content": prompt})
                 files_added = True
-        if show_input:
-            prompt = self.input_with_arrows("🌱 Prompt: ")
 
         if prompt == 'exit' or prompt == 'quit':
             exit(0)
