@@ -87,7 +87,7 @@ class Chatbot:
             {"role": "system", "content": self.system_prompt},
         ]
         self.eval_count = 0
-        self.log_filename = f"{self.home}/source/gpt/logs/{self.timestamp}.md"
+        self.log_filename = f"{self.home}/source/llm-utils/logs/{self.timestamp}.md"
         readline.parse_and_bind("set editing-mode vi")
 
     def _bootstrap(self):
