@@ -1,9 +1,11 @@
 import re
+import subprocess
+import socket
+import errno
 import time
 import argparse
-import readline
+# import readline
 import openai
-import subprocess
 import os
 import datetime
 
@@ -33,8 +35,8 @@ def rate_limit(seconds=5):
         def wrapper(*args, **kwargs):
             current_time = time.time()
             if current_time - last_called[0] < seconds:
-                print("\n\nThis programs call rate limit was exceeded. Exiting early out of caution ...")
-                exit()
+                print("\n\nThis programs call rate limit was exceeded. Adding shortd delay out of caution...\n")
+                time.sleep(4)
             last_called[0] = current_time
             return func(*args, **kwargs)
         
@@ -88,7 +90,7 @@ class Chatbot:
         ]
         self.eval_count = 0
         self.log_filename = f"{self.home}/source/llm-utils/logs/{self.timestamp}.md"
-        readline.parse_and_bind("set editing-mode vi")
+        # readline.parse_and_bind("set editing-mode vi")
 
     def _bootstrap(self):
         self.args = self._parse_arguments()
@@ -101,7 +103,9 @@ class Chatbot:
         print(self.help())
 
     def help(self):
-        return "ℹ️  You can skip file operations by prefixing your prompt with `!`\n"
+        if (self.args.skip_fs):
+            return "ℹ️  Skipping file ops\n"
+        return "ℹ️  You can skip file operations by prefixing your prompt with `!` or with the --skip_fs option \n"
 
     # https://pythex.org/
     def _get_sys_prompt(self):
@@ -157,6 +161,13 @@ class Chatbot:
             "--ext", type=str, help="Language specific prompts. file path"
         )
 
+
+        parser.add_argument(
+            "--verbose", action="store_true", help="Print additional info about cost and debug"
+        )
+        parser.add_argument(
+            "--skip_fs", action="store_true", help="Disable fs operations for session"
+        )
         parser.add_argument(
             "-f",
             "--files",
@@ -178,34 +189,51 @@ class Chatbot:
 
     def stats(self, start, end, response):
         latency = end - start
-        print(f"# USAGE: \n")
-        print(f"{response.usage}")
-        print(f"- Latency: {latency}")
-        print(f"- Model: {response.model}")
+        if self.args.verbose:
+            print(f"# USAGE: \n")
+            print(f"{response.usage}")
+            print(f"- Latency: {latency}")
+            print(f"- Model: {response.model}")
         prompt_cost = (response.usage["prompt_tokens"] / 1000) * 0.03
         completion_cost = (response.usage["total_tokens"] / 1000) * 0.06
         total_cost = prompt_cost + completion_cost
         self.running_total += total_cost
         self.cost = f"- Cost: {total_cost}\n- Total: {self.running_total}"
-        print(self.delimiter)
-        print(self.cost)
-        print(self.delimiter)
+        if self.args.verbose:
+            print(self.delimiter)
+            print(self.cost)
+            print(self.delimiter)
 
+    @rate_limit(seconds=5)
     def chat(self):
         result = ""
         start = time.time()
         if self.args.mock:
             response = MockResponse()
         else:
-            response = openai.ChatCompletion.create(
-                model=self.model, messages=self.messages
-            )
+            success = False
+
+            while not success:
+                try: 
+                    response = openai.ChatCompletion.create(
+                        model=self.model, messages=self.messages
+                    )
+
+                    success = True
+                except openai.error.APIConnectionError:
+                    subprocess.run("pbcopy", text=True, input=self.prompt)
+
+                    if e.errno != errno.ECONNRESET:
+                        self._log('Connection reset, retrying: \n')
+                    success = False
+                    # Error communicating with OpenAI: ('Connection aborted.', OSError("(54, 'ECONNRESET')"))
+
         end = time.time()
         for choice in getattr(response, "choices", []):
             result += choice.message.content
         self.stats(start, end, response)
         self.messages.append({"role": "assistant", "content": result})
-        self._log(f"🌸\n\n {result}\n")
+        self._log(f"🌸\n\n{result}\n")
         return result
 
     def _send(self):
@@ -249,6 +277,9 @@ class Chatbot:
 
         if self.args.prompt:
             prompt += f"\n\n{prompt}"
+        else:
+            input = self.input_with_arrows("🌱 Prompt: ")
+            prompt += input
         return prompt
 
     def extract_code_blocks(self, content):
@@ -259,7 +290,6 @@ class Chatbot:
         code_blocks = code_block_pattern.findall(content)
         return code_blocks
 
-    @rate_limit(seconds=5)
     def process(self):
         files_added = False
         prompt = ""
@@ -273,7 +303,11 @@ class Chatbot:
         if not self.args.files and show_input:
             prompt = self.input_with_arrows("🌱 Prompt: ")
 
-            if prompt[0] == "!":
+            if (not prompt):
+                print('\nRejecting blank line, please supply prompt...\n')
+                self.process()
+                
+            if prompt[0] == "!" or self.args.skip_fs:
                 self.skip_file_edits_for_next_query = True
             else:
                 self.skip_file_edits_for_next_query = False
@@ -292,6 +326,7 @@ class Chatbot:
         self._send()
         self.eval_count += 1
         print(f"✅ You have completed {self.send_count} requests for this session\n")
+        print(f"✅ {self.cost}\n")
 
     def start(self):
         """

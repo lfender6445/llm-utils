@@ -15,7 +15,7 @@ function gptc() {
     # gpt-4 head build
     # gpt-4-0314 - no updates for 3 months, june 14 2023
     # gpt-4-32k-0314 same as prev but 32k token support
-    MODEL="gpt-4" python ~/source/llm-utils/conversate.py "$@"
+    MODEL="gpt-4" python ~/source/llm-utils/conversate.py --skip_fs "$@"
 }
 
 function gptc4() {
@@ -30,11 +30,7 @@ function llama() {
    echo "🦙 says:\n" 
    /Users/lfender-mba/dalai/alpaca/main --seed -1 --threads 4 --n_predict 400 --model  ~/dalai/alpaca/models/7B/ggml-model-q4_0.bin --top_k 40 --top_p 0.9 --temp 0.8 --repeat_last_n 64 --repeat_penalty 1.3 -p "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
-### Instruction:
-$1
-
-### Response:
-" 
+### Response:" 
 }
 
 function img_gpt () {

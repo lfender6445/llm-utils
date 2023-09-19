@@ -102,8 +102,8 @@ class Commands:
 
     def code_eval(self, result):
         chatbot_instance = self.chatbot_instance
-
-        if not chatbot_instance.skip_file_edits_for_next_query:
+        allow_fs = not chatbot_instance.skip_file_edits_for_next_query or not self.chatbot_instance.args.allow_fs
+        if allow_fs:
             # NOTE: extractions only work for LEFT ALIGNED BACKTICKS without space
             file_map = {
                 index: value
@@ -137,4 +137,4 @@ class Commands:
                 if out == "a" or out == "ac":
                     use_comments = out[-1] == "c"
                     self.append_file(codeblock, file_map, use_comments)
-            # print(chatbot_instance.delimiter)
+            # print(chatbot_instance.deli
