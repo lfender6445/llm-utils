@@ -1,4 +1,5 @@
 import re
+import pprint
 import subprocess
 import socket
 import errno
@@ -31,7 +32,7 @@ def rate_limit(seconds=5):
     def decorator(func):
         ## NOTE: array used instead of value to for scoping issues
         last_called = [0]
-        
+
         def wrapper(*args, **kwargs):
             current_time = time.time()
             if current_time - last_called[0] < seconds:
@@ -39,9 +40,9 @@ def rate_limit(seconds=5):
                 time.sleep(4)
             last_called[0] = current_time
             return func(*args, **kwargs)
-        
+
         return wrapper
-    
+
     return decorator
 
 class ToStruct(object):
@@ -214,18 +215,27 @@ class Chatbot:
             success = False
 
             while not success:
-                try: 
+                try:
                     response = openai.ChatCompletion.create(
                         model=self.model, messages=self.messages
                     )
 
                     success = True
-                except openai.error.APIConnectionError:
+                except Exception as api_err:
                     subprocess.run("pbcopy", text=True, input=self.prompt)
 
-                    if e.errno != errno.ECONNRESET:
-                        self._log('Connection reset, retrying: \n')
-                    success = False
+                    print('An OpenAI API error occurred, last prompt has been copied to clipboard. Recoving prompt...\n' )
+
+                    pprint.pprint(dir(api_err))
+                    # pprint.pprint(dir(api_err.err))
+
+                    should_try_again = input('\nWould you like to try again? y or n\n')
+                    if should_try_again == 'y' or should_try_again == 'Y':
+                        success = False
+                    else:
+                        raise api_err
+                    # if e.errno != errno.ECONNRESET:
+                    #     self._log('Connection reset, retrying: \n')
                     # Error communicating with OpenAI: ('Connection aborted.', OSError("(54, 'ECONNRESET')"))
 
         end = time.time()
@@ -257,7 +267,7 @@ class Chatbot:
         return line
 
     def files_prompt(self):
-        # Get file contents and add them to the prompt
+        # Get file contents and add them to the nprompt
         prompt = ""
         file_contents = []
         if self.args.files:
@@ -306,7 +316,7 @@ class Chatbot:
             if (not prompt):
                 print('\nRejecting blank line, please supply prompt...\n')
                 self.process()
-                
+
             if prompt[0] == "!" or self.args.skip_fs:
                 self.skip_file_edits_for_next_query = True
             else:

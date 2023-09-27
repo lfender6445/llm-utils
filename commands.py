@@ -102,7 +102,7 @@ class Commands:
 
     def code_eval(self, result):
         chatbot_instance = self.chatbot_instance
-        allow_fs = not chatbot_instance.skip_file_edits_for_next_query or not self.chatbot_instance.args.allow_fs
+        allow_fs = not chatbot_instance.skip_file_edits_for_next_query or not self.chatbot_instance.args.skip_fs
         if allow_fs:
             # NOTE: extractions only work for LEFT ALIGNED BACKTICKS without space
             file_map = {
