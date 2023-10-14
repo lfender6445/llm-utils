@@ -226,10 +226,11 @@ class Chatbot:
 
                     print('An OpenAI API error occurred, last prompt has been copied to clipboard. Recoving prompt...\n' )
 
-                    pprint.pprint(dir(api_err))
+                    # pprint.pprint(dir(api_err))
+                    pprint.pprint(api_err)
                     # pprint.pprint(dir(api_err.err))
 
-                    should_try_again = input('\nWould you like to try again? y or n\n')
+                    should_try_again = input('\nWould you like to try again? y or n: ')
                     if should_try_again == 'y' or should_try_again == 'Y':
                         success = False
                     else:
