@@ -209,11 +209,10 @@ class Chatbot:
     def chat(self):
         result = ""
         start = time.time()
+        success = False
         if self.args.mock:
             response = MockResponse()
         else:
-            success = False
-
             while not success:
                 try:
                     response = openai.ChatCompletion.create(
@@ -221,7 +220,14 @@ class Chatbot:
                     )
 
                     success = True
+                    end = time.time()
+                    for choice in getattr(response, "choices", []):
+                        result += choice.message.content
+                    self.stats(start, end, response)
+                    self.messages.append({"role": "assistant", "content": result})
+                    self._log(f"🌸\n\n{result}\n")
                 except Exception as api_err:
+                    success = False
                     subprocess.run("pbcopy", text=True, input=self.prompt)
 
                     print('An OpenAI API error occurred, last prompt has been copied to clipboard. Recoving prompt...\n' )
@@ -239,12 +245,7 @@ class Chatbot:
                     #     self._log('Connection reset, retrying: \n')
                     # Error communicating with OpenAI: ('Connection aborted.', OSError("(54, 'ECONNRESET')"))
 
-        end = time.time()
-        for choice in getattr(response, "choices", []):
-            result += choice.message.content
-        self.stats(start, end, response)
-        self.messages.append({"role": "assistant", "content": result})
-        self._log(f"🌸\n\n{result}\n")
+
         return result
 
     def _send(self):
