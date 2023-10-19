@@ -5,6 +5,7 @@ import socket
 import errno
 import time
 import argparse
+from unittest.loader import VALID_MODULE_NAME
 # import readline
 import openai
 import os
@@ -36,8 +37,12 @@ def rate_limit(seconds=5):
         def wrapper(*args, **kwargs):
             current_time = time.time()
             if current_time - last_called[0] < seconds:
-                print("\n\nThis programs call rate limit was exceeded. Adding shortd delay out of caution...\n")
-                time.sleep(4)
+                print("\n\nThis programs call rate limit was exceeded. Adding short delay out of caution...\n")
+                time.sleep(3)
+                should_try_again = input('\nWould you like to try again? y or n: ')
+                if not should_try_again == 'y' or not should_try_again == 'Y':
+                    raise Exception('aborting from rate limiter')
+
             last_called[0] = current_time
             return func(*args, **kwargs)
 
@@ -144,6 +149,7 @@ class Chatbot:
             help="add llama response",
         )
         parser.add_argument(
+            "-p",
             "--prompt",
             type=str,
             help="Supply and skip initial prompt",
@@ -225,7 +231,9 @@ class Chatbot:
                         result += choice.message.content
                     self.stats(start, end, response)
                     self.messages.append({"role": "assistant", "content": result})
-                    self._log(f"🌸\n\n{result}\n")
+                    self._log(f"\n=== 🌸 RESULT {self.eval_count} ===\n")
+                    self._log(f"\n\n{result}\n")
+                    self._log(f"\n=== 🌸 RESULT {self.eval_count} ===\n")
                 except Exception as api_err:
                     success = False
                     subprocess.run("pbcopy", text=True, input=self.prompt)
@@ -241,9 +249,6 @@ class Chatbot:
                         success = False
                     else:
                         raise api_err
-                    # if e.errno != errno.ECONNRESET:
-                    #     self._log('Connection reset, retrying: \n')
-                    # Error communicating with OpenAI: ('Connection aborted.', OSError("(54, 'ECONNRESET')"))
 
 
         return result
@@ -303,42 +308,57 @@ class Chatbot:
         return code_blocks
 
     def process(self):
-        files_added = False
         prompt = ""
         if self.eval_count == 0:
-            if self.args.prompt:
-                prompt = self.args.prompt
+            prompt = self.args.prompt or prompt
             show_input = not prompt
         else:
             show_input = True
 
-        if not self.args.files and show_input:
+        if (not self.args.files and show_input):
             prompt = self.input_with_arrows("🌱 Prompt: ")
 
             if (not prompt):
                 print('\nRejecting blank line, please supply prompt...\n')
-                self.process()
+                return 'VALIDATION_ERROR_BLANK'
 
             if prompt[0] == "!" or self.args.skip_fs:
                 self.skip_file_edits_for_next_query = True
             else:
                 self.skip_file_edits_for_next_query = False
         if self.args.files:
-            if not files_added:
-                print(f"🗂️  Loading into ctx: {self.args.files}\n")
-                prompt = self.files_prompt()
-                self.messages.append({"role": "user", "content": prompt})
-                files_added = True
+            print(f"🗂️  Loading into ctx: {self.args.files}\n")
+            prompt = self.files_prompt()
+            self.messages.append({"role": "user", "content": prompt})
+            # remove processed files, otherwise infinite loop
+            self.args.files = None
 
         if prompt == 'exit' or prompt == 'quit':
-            exit(0)
+            return 'EXIT'
+
+        if prompt == 'r' or prompt == 'reset':
+            self._log(self.delimiter)
+            self._log("RESET CONTEXT\n")
+            self._log(self.delimiter)
+            self.args.files = None
+            self.prompt = None
+            return 'RESET'
+
+        if prompt == 'd' or prompt == 'debug':
+            self._log(self.delimiter)
+            self._log(f"{self.messages}\n")
+            self._log(f"{self.stats}\n")
+            self._log(self.delimiter)
+            return 'DEBUG'
+
         self.prompt = prompt
         self._log(f"\nPrompt: {prompt}", False)
         self.messages.append({"role": "user", "content": prompt})
         self._send()
         self.eval_count += 1
         print(f"✅ You have completed {self.send_count} requests for this session\n")
-        print(f"✅ {self.cost}\n")
+        print(f"{self.cost}\n")
+        return 'SUCCESS'
 
     def start(self):
         """
@@ -354,7 +374,10 @@ class Chatbot:
         5. Print the response and log the conversation.
         """
         while True:
-            self.process()
+            code = self.process()
+            if code == 'EXIT':
+                exit(0)
+
 
 def main():
     Chatbot().start()
